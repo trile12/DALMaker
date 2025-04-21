@@ -1,0 +1,105 @@
+########################
+# Build Results
+########################
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+[Dd]ebug*/
+[Rr]elease*/
+x64/
+x86/
+bld/
+artifacts/
+
+########################
+# Avalonia UI
+########################
+**/bin/
+**/obj/
+*.g.cs
+*.g.i.cs
+*.r.g.cs
+*.r.g.i.cs
+GeneratedCode/
+
+########################
+# IDE Specific
+########################
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vscode/
+
+########################
+# ASP.NET / App Data
+########################
+*.log
+*.bak
+*.tmp
+*.db
+*.db-shm
+*.db-wal
+*.cache
+
+########################
+# NuGet Packages
+########################
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+packages/
+
+########################
+# Code Coverage & Logs
+########################
+TestResults/
+*.coverage
+*.coveragexml
+*.code-coverage
+*.VisualState.xml
+*.binlog
+*.svclog
+nunit-*.xml
+TestResult.xml
+BuildLog.*
+
+########################
+# System / OS Files
+########################
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+*.swp
+
+########################
+# Secrets and Configs
+########################
+secrets.json
+appsettings.*.json  # Optional: exclude only production-sensitive ones
+*.key
+*.pem
+*.pfx
+
+########################
+# Resharper / Rider
+########################
+_ReSharper*/
+*.DotSettings.user
+.idea/
+
+########################
+# Dotnet Tools
+########################
+.dotnet-tools.json
+
+########################
+# Temporary Files
+########################
+~$*
+*~
