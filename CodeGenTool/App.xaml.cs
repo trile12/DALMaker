@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using CodeGenTool.Services;
+using System.Windows;
 
 namespace CodeGenTool
 {
@@ -7,5 +8,10 @@ namespace CodeGenTool
 	/// </summary>
 	public partial class App : Application
 	{
+		protected override void OnStartup(StartupEventArgs e)
+		{
+			base.OnStartup(e);
+			ThemeManager.LoadSavedTheme();
+		}
 	}
 }

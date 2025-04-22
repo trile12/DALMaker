@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel;
 
 namespace CodeGenTool.Models
 {
 	public class TemplateInfo : INotifyPropertyChanged
 	{
 		private string _name;
+
 		public string Name
 		{
 			get => _name;
@@ -21,6 +17,7 @@ namespace CodeGenTool.Models
 		}
 
 		private string _fileName;
+
 		public string FileName
 		{
 			get => _fileName;
@@ -32,6 +29,7 @@ namespace CodeGenTool.Models
 		}
 
 		private bool _isSelected;
+
 		public bool IsSelected
 		{
 			get => _isSelected;
@@ -43,6 +41,7 @@ namespace CodeGenTool.Models
 		}
 
 		public event PropertyChangedEventHandler PropertyChanged;
+
 		protected virtual void OnPropertyChanged(string propertyName)
 		{
 			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

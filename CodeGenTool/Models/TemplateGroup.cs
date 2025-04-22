@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CodeGenTool.Models
 {
 	public class TemplateGroup : INotifyPropertyChanged
 	{
 		private string _name;
+
 		public string Name
 		{
 			get => _name;
@@ -22,6 +18,7 @@ namespace CodeGenTool.Models
 		}
 
 		private bool _isExpanded;
+
 		public bool IsExpanded
 		{
 			get => _isExpanded;
@@ -41,6 +38,7 @@ namespace CodeGenTool.Models
 		}
 
 		public event PropertyChangedEventHandler PropertyChanged;
+
 		protected virtual void OnPropertyChanged(string propertyName)
 		{
 			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

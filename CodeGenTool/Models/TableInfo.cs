@@ -1,16 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CodeGenTool.Models
 {
 	public class TableInfo : INotifyPropertyChanged
 	{
+		public DatabaseInfo ParentDatabase { get; set; }
+
 		private string _name;
+
 		public string Name
 		{
 			get => _name;
@@ -22,6 +20,7 @@ namespace CodeGenTool.Models
 		}
 
 		private bool _isSelected;
+
 		public bool IsSelected
 		{
 			get => _isSelected;
@@ -36,6 +35,7 @@ namespace CodeGenTool.Models
 		public ObservableCollection<ColumnInfo> Columns { get; } = new ObservableCollection<ColumnInfo>();
 
 		public event PropertyChangedEventHandler PropertyChanged;
+
 		protected virtual void OnPropertyChanged(string propertyName)
 		{
 			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
