@@ -15,6 +15,14 @@ namespace CodeGenTool
 			DataContext = new MainViewModel();
 			InitializeTemplateGroups();
 			ThemeToggle.IsChecked = ViewModel.IsDarkTheme;
+
+			ViewModel.PropertyChanged += (sender, args) =>
+			{
+				if (args.PropertyName == nameof(ViewModel.GeneratedCode))
+				{
+					CodeEditor.Text = ViewModel.GeneratedCode;
+				}
+			};
 		}
 
 		private void InitializeTemplateGroups()

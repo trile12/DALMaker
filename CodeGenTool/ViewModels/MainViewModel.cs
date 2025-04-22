@@ -3,8 +3,10 @@ using CodeGenTool.Services;
 using CommunityToolkit.Mvvm.Input;
 using MySql.Data.MySqlClient;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -39,19 +41,21 @@ namespace CodeGenTool.ViewModels
 				connection.Open();
 				Databases.Clear();
 
-				using var cmd = new MySqlCommand("SHOW DATABASES", connection);
-				using var reader = cmd.ExecuteReader();
-				while (reader.Read())
+				using (var cmd = new MySqlCommand("SHOW DATABASES", connection))
+				using (var reader = cmd.ExecuteReader())
 				{
-					string dbName = reader.GetString(0);
-					if (dbName is not ("mysql" or "information_schema" or "performance_schema" or "sys"))
+					while (reader.Read())
 					{
-						Databases.Add(new DatabaseInfo
+						string dbName = reader.GetString(0);
+						if (dbName is not ("mysql" or "information_schema" or "performance_schema" or "sys"))
 						{
-							Name = dbName,
-							Tables = new ObservableCollection<TableInfo>(),
-							IsSelected = false
-						});
+							Databases.Add(new DatabaseInfo
+							{
+								Name = dbName,
+								Tables = new ObservableCollection<Models.TableInfo>(),
+								IsSelected = false
+							});
+						}
 					}
 				}
 
@@ -61,15 +65,43 @@ namespace CodeGenTool.ViewModels
 					string dbConnStr = connectionString + $"Database={db.Name};";
 					using var dbConn = new MySqlConnection(dbConnStr);
 					dbConn.Open();
+
 					using var tableCmd = new MySqlCommand("SHOW TABLES", dbConn);
-					using var tblReader = tableCmd.ExecuteReader();
+					using var tblReader = tableCmd.ExecuteReader(CommandBehavior.CloseConnection);
+					var tableList = new List<string>();
+
 					while (tblReader.Read())
 					{
-						db.Tables.Add(new TableInfo
+						tableList.Add(tblReader.GetString(0));
+					}
+
+					foreach (var tableName in tableList)
+					{
+						var tableInfo = new Models.TableInfo
 						{
-							Name = tblReader.GetString(0),
+							Name = tableName,
 							ParentDatabase = db
-						});
+						};
+
+						string newDbString = connectionString + $"Database={db.Name};";
+						using var newdbConn = new MySqlConnection(newDbString);
+						newdbConn.Open();
+
+						// Sử dụng một kết nối riêng biệt để lấy thông tin cột
+						using var columnCmd = new MySqlCommand($"SHOW COLUMNS FROM `{tableName}`", newdbConn);
+						using var colReader = columnCmd.ExecuteReader(CommandBehavior.CloseConnection); // Đảm bảo đóng kết nối khi đọc xong
+						while (colReader.Read())
+						{
+							tableInfo.Columns.Add(new ColumnInfo
+							{
+								Name = colReader.GetString(0),
+								DataType = colReader.GetString(1),
+								IsNullable = colReader.GetString(2) == "YES",
+								//Key = colReader.GetString(3)
+							});
+						}
+
+						db.Tables.Add(tableInfo);
 						totalTables++;
 					}
 				}
@@ -89,21 +121,21 @@ namespace CodeGenTool.ViewModels
 
 		private void ExecuteGenerate()
 		{
-			var selectedTables = Tables.Where(t => t.IsSelected).ToList();
+			var selectedTables = Databases.SelectMany(x => x.Tables).Where(t => t.IsSelected).ToList();
 			if (!selectedTables.Any())
 			{
 				MessageBox.Show("Please select at least one table.", "Selection Required", MessageBoxButton.OK, MessageBoxImage.Warning);
 				return;
 			}
 
-			bool hasTemplate = TemplateGroups.Any(g => g.Templates.Any(t => t.IsSelected));
-			if (!hasTemplate)
-			{
-				MessageBox.Show("Please select at least one template.", "Selection Required", MessageBoxButton.OK, MessageBoxImage.Warning);
-				return;
-			}
+			//bool hasTemplate = TemplateGroups.Any(g => g.Templates.Any(t => t.IsSelected));
+			//if (!hasTemplate)
+			//{
+			//	MessageBox.Show("Please select at least one template.", "Selection Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+			//	return;
+			//}
 
-			if (!Directory.Exists(OutputPath))
+			if (GenerateSqlFile && !Directory.Exists(OutputPath))
 			{
 				try
 				{
@@ -121,25 +153,17 @@ namespace CodeGenTool.ViewModels
 
 			try
 			{
+				string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "csharp_model.template");
+				string templateContent = File.ReadAllText(templatePath);
 				int filesGenerated = 0;
+				string rendered = "";
+				GeneratedCode = "";
 				foreach (var table in selectedTables)
 				{
-					foreach (var group in TemplateGroups)
-					{
-						foreach (var template in group.Templates)
-						{
-							if (!template.IsSelected) continue;
-							string ext = template.FileName.EndsWith(".sql.template") ? ".sql" : ".cs";
-							string fileName = $"{table.Name}_{template.Name.Replace(" ", "_")}{ext}";
-							string path = Path.Combine(OutputPath, fileName);
-							File.WriteAllText(path, $"// Generated code for {table.Name} using {template.Name} template\n");
-							filesGenerated++;
-						}
-					}
+					rendered = TemplateEngine.Render(templateContent, table);
+					GeneratedCode += $"{rendered}\n";
 				}
-
 				StatusMessage = $"Generated {filesGenerated} files.";
-				MessageBox.Show($"Successfully generated {filesGenerated} files.\n\nOutput: {OutputPath}", "Done", MessageBoxButton.OK, MessageBoxImage.Information);
 			}
 			catch (Exception ex)
 			{
@@ -167,79 +191,6 @@ namespace CodeGenTool.ViewModels
 		{
 			IsDarkTheme = (bool)value;
 			ThemeManager.ChangeTheme(IsDarkTheme ? ThemeType.Dark : ThemeType.Light);
-		}
-
-		private void LoadTables()
-		{
-			if (string.IsNullOrEmpty(Database))
-				return;
-
-			IsLoading = true;
-			StatusMessage = $"Loading tables from {Database}...";
-
-			try
-			{
-				string connectionString = $"Server={Server};User ID={User};Password={Password};Database={Database}";
-
-				using (var connection = new MySqlConnection(connectionString))
-				{
-					connection.Open();
-
-					Tables.Clear();
-
-					using (var cmd = new MySqlCommand("SHOW TABLES", connection))
-					{
-						using (var reader = cmd.ExecuteReader())
-						{
-							while (reader.Read())
-							{
-								string tableName = reader.GetString(0);
-								Tables.Add(new TableInfo { Name = tableName });
-							}
-						}
-					}
-
-					foreach (var table in Tables)
-					{
-						using (var cmd = new MySqlCommand($"DESCRIBE `{table.Name}`", connection))
-						{
-							using (var reader = cmd.ExecuteReader())
-							{
-								while (reader.Read())
-								{
-									string fieldName = reader.GetString("Field");
-									string dataType = reader.GetString("Type");
-									bool isPrimaryKey = reader.GetString("Key") == "PRI";
-									bool isNullable = reader.GetString("Null") == "YES";
-
-									table.Columns.Add(new ColumnInfo
-									{
-										Name = fieldName,
-										DataType = dataType,
-										IsPrimaryKey = isPrimaryKey,
-										IsNullable = isNullable
-									});
-
-									if (isPrimaryKey)
-										table.PrimaryKey = fieldName;
-								}
-							}
-						}
-					}
-
-					StatusMessage = $"Loaded {Tables.Count} tables from {Database}.";
-				}
-			}
-			catch (Exception ex)
-			{
-				StatusMessage = $"Failed to load tables: {ex.Message}";
-				//MessageBox.Show($"Failed to load tables from database.\n\n{ex.Message}",
-				//				"Error", MessageBoxButton.OK, MessageBoxImage.Error);
-			}
-			finally
-			{
-				IsLoading = false;
-			}
 		}
 
 		#endregion Methods
@@ -291,7 +242,7 @@ namespace CodeGenTool.ViewModels
 			}
 		}
 
-		private string _password;
+		private string _password = "admin";
 
 		public string Password
 		{
@@ -312,7 +263,6 @@ namespace CodeGenTool.ViewModels
 			{
 				_database = value;
 				OnPropertyChanged(nameof(Database));
-				LoadTables();
 			}
 		}
 
@@ -325,18 +275,6 @@ namespace CodeGenTool.ViewModels
 			{
 				_databases = value;
 				OnPropertyChanged(nameof(Databases));
-			}
-		}
-
-		private ObservableCollection<TableInfo> _tables = new ObservableCollection<TableInfo>();
-
-		public ObservableCollection<TableInfo> Tables
-		{
-			get => _tables;
-			set
-			{
-				_tables = value;
-				OnPropertyChanged(nameof(Tables));
 			}
 		}
 
@@ -373,6 +311,18 @@ namespace CodeGenTool.ViewModels
 			{
 				_statusMessage = value;
 				OnPropertyChanged(nameof(StatusMessage));
+			}
+		}
+
+		private string _generatedCode;
+
+		public string GeneratedCode
+		{
+			get => _generatedCode;
+			set
+			{
+				_generatedCode = value;
+				OnPropertyChanged(nameof(GeneratedCode));
 			}
 		}
 
