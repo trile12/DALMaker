@@ -1,0 +1,88 @@
+﻿-- Create procedures for @dbTable2netUpper
+
+-- Insert procedure
+CREATE OR ALTER PROCEDURE [dbo].[InsertInto@dbTable2netUpper]
+    @foreach
+    @p_@dbColmnName2net @dbType2mssql,
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    INSERT INTO [dbo].[@dbTableName] (
+        @foreach
+        [@dbColmnName],
+    )
+    VALUES (
+        @foreach
+        @p_@dbColmnName2net,
+    );
+    
+    SELECT SCOPE_IDENTITY() AS NewId;
+END
+GO
+
+-- Update procedure
+CREATE OR ALTER PROCEDURE [dbo].[Update@dbTable2netUpper]
+    @foreachPK
+    @p_@dbColmnName2net @dbType2mssql,
+    @foreach
+    @p_@dbColmnName2net @dbType2mssql,
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    UPDATE [dbo].[@dbTableName]
+    SET 
+        @foreach
+        [@dbColmnName] = @p_@dbColmnName2net,
+    WHERE 
+        @foreachPK
+        [@dbColmnName] = @p_@dbColmnName2net;
+END
+GO
+
+-- Delete procedure
+CREATE OR ALTER PROCEDURE [dbo].[Delete@dbTable2netUpper]
+    @foreachPK
+    @p_@dbColmnName2net @dbType2mssql,
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DELETE FROM [dbo].[@dbTableName]
+    WHERE 
+        @foreachPK
+        [@dbColmnName] = @p_@dbColmnName2net;
+END
+GO
+
+-- Select by ID procedure
+CREATE OR ALTER PROCEDURE [dbo].[GetById@dbTable2netUpper]
+    @foreachPK
+    @p_@dbColmnName2net @dbType2mssql,
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        @foreach
+        [@dbColmnName],
+    FROM [dbo].[@dbTableName]
+    WHERE 
+        @foreachPK
+        [@dbColmnName] = @p_@dbColmnName2net;
+END
+GO
+
+-- Select all procedure
+CREATE OR ALTER PROCEDURE [dbo].[GetAll@dbTable2netUpper]
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        @foreach
+        [@dbColmnName],
+    FROM [dbo].[@dbTableName];
+END
+GO

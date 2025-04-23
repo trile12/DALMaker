@@ -5,8 +5,6 @@ namespace CodeGenTool.Models
 {
 	public class TableInfo : INotifyPropertyChanged
 	{
-		public DatabaseInfo ParentDatabase { get; set; }
-
 		private string _name;
 
 		public string Name

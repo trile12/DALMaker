@@ -14,13 +14,13 @@ namespace CodeGenTool
 			InitializeComponent();
 			DataContext = new MainViewModel();
 			InitializeTemplateGroups();
-			ThemeToggle.IsChecked = ViewModel.IsDarkTheme;
 
 			ViewModel.PropertyChanged += (sender, args) =>
 			{
 				if (args.PropertyName == nameof(ViewModel.GeneratedCode))
 				{
-					CodeEditor.Text = ViewModel.GeneratedCode;
+					// You can add code here to handle generated code
+					// For example, showing it in a text editor
 				}
 			};
 		}
@@ -29,122 +29,117 @@ namespace CodeGenTool
 		{
 			ViewModel.TemplateGroups.Clear();
 
-			// SQL Templates
-			var mysqlGroup = new TemplateGroup("MySQL SP");
-			mysqlGroup.Templates.Add(new TemplateInfo { Name = "CRUD Operations", FileName = "mysql_crud.template", IsSelected = false });
-			mysqlGroup.Templates.Add(new TemplateInfo { Name = "Basic Select", FileName = "mysql_select.template", IsSelected = false });
-
-			var mariaGroup = new TemplateGroup("MariaDB SP");
-			mariaGroup.Templates.Add(new TemplateInfo { Name = "CRUD Operations", FileName = "mariadb_crud.template", IsSelected = false });
-
-			var postgresGroup = new TemplateGroup("PostgreSQL SP");
-			postgresGroup.Templates.Add(new TemplateInfo { Name = "CRUD Operations", FileName = "postgres_crud.template", IsSelected = false });
-
-			var msqlGroup = new TemplateGroup("Microsoft SQL SP");
-			msqlGroup.Templates.Add(new TemplateInfo { Name = "CRUD Operations", FileName = "mssql_crud.template", IsSelected = false });
-
-			// C# Templates
 			var modelGroup = new TemplateGroup("C# Models/DTOs");
 			modelGroup.Templates.Add(new TemplateInfo { Name = "Entity Model", FileName = "csharp_model.template", IsSelected = false });
-			modelGroup.Templates.Add(new TemplateInfo { Name = "DTO", FileName = "csharp_dto.template", IsSelected = false });
+			modelGroup.Templates.Add(new TemplateInfo { Name = "DTO", FileName = "csharp_dto.cs.template", IsSelected = true });
 
 			var webApiGroup = new TemplateGroup("C# Web API");
 			webApiGroup.Templates.Add(new TemplateInfo { Name = "Controller", FileName = "csharp_controller.template", IsSelected = false });
 			webApiGroup.Templates.Add(new TemplateInfo { Name = "Service", FileName = "csharp_service.template", IsSelected = false });
 			webApiGroup.Templates.Add(new TemplateInfo { Name = "Repository", FileName = "csharp_repository.template", IsSelected = false });
 
-			ViewModel.TemplateGroups.Add(mysqlGroup);
-			ViewModel.TemplateGroups.Add(mariaGroup);
-			ViewModel.TemplateGroups.Add(postgresGroup);
-			ViewModel.TemplateGroups.Add(msqlGroup);
 			ViewModel.TemplateGroups.Add(modelGroup);
 			ViewModel.TemplateGroups.Add(webApiGroup);
+		}
+
+		private void DatabaseComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			if (e.AddedItems.Count > 0)
+			{
+				string selectedDatabase = e.AddedItems[0].ToString();
+				if (!string.IsNullOrEmpty(selectedDatabase))
+				{
+					ViewModel.Database = selectedDatabase;
+				}
+			}
 		}
 
 		private void Database_CheckBox_Checked(object sender, RoutedEventArgs e)
 		{
 			var checkBox = sender as CheckBox;
-			var database = checkBox.DataContext as DatabaseInfo;
+			var table = checkBox.DataContext as TableInfo;
 
-			foreach (var table in database.Tables)
+			foreach (var column in table.Columns)
 			{
-				table.IsSelected = true;
+				column.IsSelected = true;
 			}
 		}
 
 		private void Database_CheckBox_Unchecked(object sender, RoutedEventArgs e)
 		{
 			var checkBox = sender as CheckBox;
-			var database = checkBox.DataContext as DatabaseInfo;
+			var table = checkBox.DataContext as TableInfo;
 
-			foreach (var table in database.Tables)
+			foreach (var column in table.Columns)
 			{
-				table.IsSelected = false;
+				column.IsSelected = false;
 			}
 		}
 
 		private void Table_CheckBox_Checked(object sender, RoutedEventArgs e)
 		{
 			var checkBox = sender as CheckBox;
-			var table = checkBox.DataContext as TableInfo;
+			var column = checkBox.DataContext as ColumnInfo;
 
-			bool allTablesSelected = true;
-			foreach (var siblingTable in table.ParentDatabase.Tables)
+			var table = column.ParentTable;
+
+			bool allColumnsSelected = true;
+			foreach (var col in table.Columns)
 			{
-				if (!siblingTable.IsSelected)
+				if (!col.IsSelected)
 				{
-					allTablesSelected = false;
+					allColumnsSelected = false;
 					break;
 				}
 			}
 
-			if (allTablesSelected)
+			if (allColumnsSelected)
 			{
-				table.ParentDatabase.IsSelected = true;
+				table.IsSelected = true;
 			}
 		}
 
 		private void Table_CheckBox_Unchecked(object sender, RoutedEventArgs e)
 		{
 			var checkBox = sender as CheckBox;
-			var table = checkBox.DataContext as TableInfo;
+			var column = checkBox.DataContext as ColumnInfo;
 
-			table.ParentDatabase.IsSelected = false;
+			var table = column.ParentTable;
+			table.IsSelected = false;
 		}
 
 		private void Database_Button_Click(object sender, RoutedEventArgs e)
 		{
 			Button button = (Button)sender;
-			DatabaseInfo database = (DatabaseInfo)button.DataContext;
-
-			database.IsSelected = !database.IsSelected;
-
-			foreach (var table in database.Tables)
+			TableInfo table = (TableInfo)button.DataContext;
+			table.IsSelected = !table.IsSelected;
+			foreach (var column in table.Columns)
 			{
-				table.IsSelected = database.IsSelected;
+				column.IsSelected = table.IsSelected;
 			}
-
 			e.Handled = true;
 		}
 
-		private void Table_Button_Click(object sender, RoutedEventArgs e)
+		private void Column_Button_Click(object sender, RoutedEventArgs e)
 		{
 			Button button = (Button)sender;
-			TableInfo table = (TableInfo)button.DataContext;
+			ColumnInfo column = (ColumnInfo)button.DataContext;
 
-			table.IsSelected = !table.IsSelected;
+			column.IsSelected = !column.IsSelected;
 
-			bool allTablesSelected = true;
-			foreach (var siblingTable in table.ParentDatabase.Tables)
+			var table = column.ParentTable;
+
+			bool allColumnsSelected = true;
+			foreach (var col in table.Columns)
 			{
-				if (!siblingTable.IsSelected)
+				if (!col.IsSelected)
 				{
-					allTablesSelected = false;
+					allColumnsSelected = false;
 					break;
 				}
 			}
 
-			table.ParentDatabase.IsSelected = allTablesSelected;
+			table.IsSelected = allColumnsSelected;
 
 			e.Handled = true;
 		}

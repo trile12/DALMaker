@@ -1,0 +1,11 @@
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+
+namespace YourNamespace.Dtos
+{
+    public class @dbTable2netUpperDto
+    {
+        @foreach
+        public @dbType2net @dbColmnName2netUpper { get; set; }
+    }
+}

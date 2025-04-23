@@ -1,5 +1,0 @@
-﻿public class @dbTable2netUpper
-{
-    @foreach
-    public @dbType2net @dbColmnName2netUpper { get; set; }
-}

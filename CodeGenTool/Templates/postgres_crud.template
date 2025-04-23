@@ -1,0 +1,97 @@
+﻿-- Create functions for @dbTable2netUpper
+
+-- Insert function
+CREATE OR REPLACE FUNCTION insert_@dbTable2net(
+    @foreach
+    p_@dbColmnName2net @dbType2postgres
+)
+RETURNS @foreachPK @dbType2postgres AS
+$$
+DECLARE
+    new_id @foreachPK @dbType2postgres;
+BEGIN
+    INSERT INTO @dbTableName (
+        @foreach
+        @dbColmnName
+    )
+    VALUES (
+        @foreach
+        p_@dbColmnName2net
+    )
+    RETURNING @foreachPK INTO new_id;
+    RETURN new_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Update function
+CREATE OR REPLACE FUNCTION update_@dbTable2net(
+    @foreachPK
+    p_@dbColmnName2net @dbType2postgres,
+    @foreach
+    p_@dbColmnName2net @dbType2postgres
+)
+RETURNS VOID AS
+$$
+BEGIN
+    UPDATE @dbTableName 
+    SET 
+        @foreach
+        @dbColmnName = p_@dbColmnName2net
+    WHERE 
+        @foreachPK
+        @dbColmnName = p_@dbColmnName2net;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Delete function
+CREATE OR REPLACE FUNCTION delete_@dbTable2net(
+    @foreachPK
+    p_@dbColmnName2net @dbType2postgres
+)
+RETURNS VOID AS
+$$
+BEGIN
+    DELETE FROM @dbTableName 
+    WHERE 
+        @foreachPK
+        @dbColmnName = p_@dbColmnName2net;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Select by ID function
+CREATE OR REPLACE FUNCTION get_@dbTable2net_by_id(
+    @foreachPK
+    p_@dbColmnName2net @dbType2postgres
+)
+RETURNS TABLE (
+    @foreach
+    @dbColmnName @dbType2postgres
+) AS
+$$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        @foreach
+        t.@dbColmnName
+    FROM @dbTableName t
+    WHERE 
+        @foreachPK
+        t.@dbColmnName = p_@dbColmnName2net;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Select all function
+CREATE OR REPLACE FUNCTION get_all_@dbTable2net()
+RETURNS TABLE (
+    @foreach
+    @dbColmnName @dbType2postgres
+) AS
+$$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        @foreach
+        @dbColmnName
+    FROM @dbTableName;
+END;
+$$ LANGUAGE plpgsql;

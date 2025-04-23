@@ -40,6 +40,7 @@ namespace CodeGenTool.ViewModels
 				using var connection = new MySqlConnection(connectionString);
 				connection.Open();
 				Databases.Clear();
+				Tables.Clear();
 
 				using (var cmd = new MySqlCommand("SHOW DATABASES", connection))
 				using (var reader = cmd.ExecuteReader())
@@ -49,64 +50,12 @@ namespace CodeGenTool.ViewModels
 						string dbName = reader.GetString(0);
 						if (dbName is not ("mysql" or "information_schema" or "performance_schema" or "sys"))
 						{
-							Databases.Add(new DatabaseInfo
-							{
-								Name = dbName,
-								Tables = new ObservableCollection<Models.TableInfo>(),
-								IsSelected = false
-							});
+							Databases.Add(dbName);
 						}
 					}
 				}
 
-				int totalTables = 0;
-				foreach (var db in Databases)
-				{
-					string dbConnStr = connectionString + $"Database={db.Name};";
-					using var dbConn = new MySqlConnection(dbConnStr);
-					dbConn.Open();
-
-					using var tableCmd = new MySqlCommand("SHOW TABLES", dbConn);
-					using var tblReader = tableCmd.ExecuteReader(CommandBehavior.CloseConnection);
-					var tableList = new List<string>();
-
-					while (tblReader.Read())
-					{
-						tableList.Add(tblReader.GetString(0));
-					}
-
-					foreach (var tableName in tableList)
-					{
-						var tableInfo = new Models.TableInfo
-						{
-							Name = tableName,
-							ParentDatabase = db
-						};
-
-						string newDbString = connectionString + $"Database={db.Name};";
-						using var newdbConn = new MySqlConnection(newDbString);
-						newdbConn.Open();
-
-						// Sử dụng một kết nối riêng biệt để lấy thông tin cột
-						using var columnCmd = new MySqlCommand($"SHOW COLUMNS FROM `{tableName}`", newdbConn);
-						using var colReader = columnCmd.ExecuteReader(CommandBehavior.CloseConnection); // Đảm bảo đóng kết nối khi đọc xong
-						while (colReader.Read())
-						{
-							tableInfo.Columns.Add(new ColumnInfo
-							{
-								Name = colReader.GetString(0),
-								DataType = colReader.GetString(1),
-								IsNullable = colReader.GetString(2) == "YES",
-								//Key = colReader.GetString(3)
-							});
-						}
-
-						db.Tables.Add(tableInfo);
-						totalTables++;
-					}
-				}
-
-				StatusMessage = $"Connected successfully. Found {Databases.Count} databases and {totalTables} tables.";
+				StatusMessage = $"Connected successfully. Found {Databases.Count} databases.";
 			}
 			catch (Exception ex)
 			{
@@ -119,23 +68,86 @@ namespace CodeGenTool.ViewModels
 			}
 		}
 
+		private void LoadTablesForSelectedDatabase()
+		{
+			if (string.IsNullOrWhiteSpace(Database))
+				return;
+
+			IsLoading = true;
+			StatusMessage = $"Loading tables for database {Database}...";
+			Tables.Clear();
+
+			try
+			{
+				string connectionString = $"Server={Server};User ID={User};Password={Password};Database={Database};";
+				using var connection = new MySqlConnection(connectionString);
+				connection.Open();
+
+				using var tableCmd = new MySqlCommand("SHOW TABLES", connection);
+				using var tblReader = tableCmd.ExecuteReader();
+
+				var tableNames = new List<string>();
+				while (tblReader.Read())
+				{
+					tableNames.Add(tblReader.GetString(0));
+				}
+
+				tblReader.Close();
+
+				foreach (var tableName in tableNames)
+				{
+					var tableInfo = new TableInfo
+					{
+						Name = tableName
+					};
+
+					using var columnCmd = new MySqlCommand($"SHOW COLUMNS FROM `{tableName}`", connection);
+					using var colReader = columnCmd.ExecuteReader();
+
+					while (colReader.Read())
+					{
+						tableInfo.Columns.Add(new ColumnInfo
+						{
+							Name = colReader.GetString(0),
+							DataType = colReader.GetString(1),
+							IsNullable = colReader.GetString(2) == "YES",
+							ParentTable = tableInfo,
+						});
+					}
+
+					Tables.Add(tableInfo);
+				}
+
+				StatusMessage = $"Loaded {Tables.Count} tables from database {Database}.";
+			}
+			catch (Exception ex)
+			{
+				StatusMessage = $"Failed to load tables: {ex.Message}";
+				MessageBox.Show($"Failed to load tables from database.\n\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+			}
+			finally
+			{
+				IsLoading = false;
+			}
+		}
+
 		private void ExecuteGenerate()
 		{
-			var selectedTables = Databases.SelectMany(x => x.Tables).Where(t => t.IsSelected).ToList();
+			var selectedTables = Tables.Where(t => t.IsSelected).ToList();
 			if (!selectedTables.Any())
 			{
 				MessageBox.Show("Please select at least one table.", "Selection Required", MessageBoxButton.OK, MessageBoxImage.Warning);
 				return;
 			}
 
-			//bool hasTemplate = TemplateGroups.Any(g => g.Templates.Any(t => t.IsSelected));
-			//if (!hasTemplate)
-			//{
-			//	MessageBox.Show("Please select at least one template.", "Selection Required", MessageBoxButton.OK, MessageBoxImage.Warning);
-			//	return;
-			//}
+			bool hasTemplate = TemplateGroups.Any(g => g.Templates.Any(t => t.IsSelected));
+			if (!hasTemplate)
+			{
+				MessageBox.Show("Please select at least one template.", "Selection Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+				return;
+			}
 
-			if (GenerateSqlFile && !Directory.Exists(OutputPath))
+			if (!Directory.Exists(OutputPath))
 			{
 				try
 				{
@@ -150,20 +162,50 @@ namespace CodeGenTool.ViewModels
 
 			IsLoading = true;
 			StatusMessage = "Generating code...";
-
 			try
 			{
-				string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "csharp_model.template");
-				string templateContent = File.ReadAllText(templatePath);
+				var selectedTemplates = TemplateGroups
+					.SelectMany(g => g.Templates)
+					.Where(t => t.IsSelected)
+					.ToList();
+
 				int filesGenerated = 0;
-				string rendered = "";
 				GeneratedCode = "";
-				foreach (var table in selectedTables)
+
+				foreach (var template in selectedTemplates)
 				{
-					rendered = TemplateEngine.Render(templateContent, table);
-					GeneratedCode += $"{rendered}\n";
+					string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", template.FileName);
+					if (!File.Exists(templatePath))
+					{
+						StatusMessage = $"Template file not found: {template.FileName}";
+						continue;
+					}
+
+					string templateContent = File.ReadAllText(templatePath);
+
+					foreach (var table in selectedTables)
+					{
+						var (rendered, className) = TemplateEngine.Render(templateContent, table, template.FileName);
+						GeneratedCode += $"{rendered}\n";
+
+						string fileName = $"{className}.cs";
+						string filePath = Path.Combine(OutputPath, fileName);
+
+						File.WriteAllText(filePath, rendered);
+						filesGenerated++;
+					}
 				}
+
+				if (filesGenerated > 0)
+				{
+					string consolidatedFilePath = Path.Combine(OutputPath, "AllGeneratedCode.cs");
+					File.WriteAllText(consolidatedFilePath, GeneratedCode);
+					filesGenerated++;
+				}
+
 				StatusMessage = $"Generated {filesGenerated} files.";
+
+				System.Diagnostics.Process.Start("explorer.exe", OutputPath);
 			}
 			catch (Exception ex)
 			{
@@ -261,14 +303,34 @@ namespace CodeGenTool.ViewModels
 			get => _database;
 			set
 			{
-				_database = value;
-				OnPropertyChanged(nameof(Database));
+				if (_database != value)
+				{
+					_database = value;
+					OnPropertyChanged(nameof(Database));
+
+					if (!string.IsNullOrWhiteSpace(_database))
+					{
+						LoadTablesForSelectedDatabase();
+					}
+				}
 			}
 		}
 
-		private ObservableCollection<DatabaseInfo> _databases = new ObservableCollection<DatabaseInfo>();
+		private ObservableCollection<TableInfo> _tables = new ObservableCollection<TableInfo>();
 
-		public ObservableCollection<DatabaseInfo> Databases
+		public ObservableCollection<TableInfo> Tables
+		{
+			get => _tables;
+			set
+			{
+				_tables = value;
+				OnPropertyChanged(nameof(Tables));
+			}
+		}
+
+		private ObservableCollection<string> _databases = new ObservableCollection<string>();
+
+		public ObservableCollection<string> Databases
 		{
 			get => _databases;
 			set

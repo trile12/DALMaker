@@ -34,7 +34,7 @@ namespace CodeGenTool.Models
 		public TemplateGroup(string name)
 		{
 			Name = name;
-			IsExpanded = false;
+			IsExpanded = true;
 		}
 
 		public event PropertyChangedEventHandler PropertyChanged;

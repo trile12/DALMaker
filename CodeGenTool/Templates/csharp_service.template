@@ -1,0 +1,79 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using YourNamespace.Repositories;
+using YourNamespace.Dtos;
+using YourNamespace.Models;
+
+namespace YourNamespace.Services
+{
+    public interface I@dbTable2netUpperService
+    {
+        Task<IEnumerable<@dbTable2netUpperDto>> GetAllAsync();
+        Task<@dbTable2netUpperDto> GetByIdAsync(@foreachPK @dbType2net id);
+        Task<@dbTable2netUpperDto> CreateAsync(@dbTable2netUpperDto dto);
+        Task<bool> UpdateAsync(@dbTable2netUpperDto dto);
+        Task<bool> DeleteAsync(@foreachPK @dbType2net id);
+    }
+
+    public class @dbTable2netUpperService : I@dbTable2netUpperService
+    {
+        private readonly I@dbTable2netUpperRepository _repository;
+        private readonly ILogger<@dbTable2netUpperService> _logger;
+
+        public @dbTable2netUpperService(I@dbTable2netUpperRepository repository, ILogger<@dbTable2netUpperService> logger)
+        {
+            _repository = repository;
+            _logger = logger;
+        }
+
+        public async Task<IEnumerable<@dbTable2netUpperDto>> GetAllAsync()
+        {
+            var entities = await _repository.GetAllAsync();
+            return entities.Select(MapToDto);
+        }
+
+        public async Task<@dbTable2netUpperDto> GetByIdAsync(@foreachPK @dbType2net id)
+        {
+            var entity = await _repository.GetByIdAsync(id);
+            return entity != null ? MapToDto(entity) : null;
+        }
+
+        public async Task<@dbTable2netUpperDto> CreateAsync(@dbTable2netUpperDto dto)
+        {
+            var entity = MapToEntity(dto);
+            var created = await _repository.CreateAsync(entity);
+            return MapToDto(created);
+        }
+
+        public async Task<bool> UpdateAsync(@dbTable2netUpperDto dto)
+        {
+            var entity = MapToEntity(dto);
+            return await _repository.UpdateAsync(entity);
+        }
+
+        public async Task<bool> DeleteAsync(@foreachPK @dbType2net id)
+        {
+            return await _repository.DeleteAsync(id);
+        }
+
+        private @dbTable2netUpperDto MapToDto(@dbTable2netUpper entity)
+        {
+            return new @dbTable2netUpperDto
+            {
+                @foreach
+                @dbColmnName2netUpper = entity.@dbColmnName2netUpper,
+            };
+        }
+
+        private @dbTable2netUpper MapToEntity(@dbTable2netUpperDto dto)
+        {
+            return new @dbTable2netUpper
+            {
+                @foreach
+                @dbColmnName2netUpper = dto.@dbColmnName2netUpper,
+            };
+        }
+    }
+}

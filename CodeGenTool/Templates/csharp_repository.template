@@ -1,0 +1,112 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Threading.Tasks;
+using Dapper;
+using Microsoft.Extensions.Configuration;
+using YourNamespace.Models;
+
+namespace YourNamespace.Repositories
+{
+    public interface I@dbTable2netUpperRepository
+    {
+        Task<IEnumerable<@dbTable2netUpper>> GetAllAsync();
+        Task<@dbTable2netUpper> GetByIdAsync(@foreachPK @dbType2net id);
+        Task<@dbTable2netUpper> CreateAsync(@dbTable2netUpper entity);
+        Task<bool> UpdateAsync(@dbTable2netUpper entity);
+        Task<bool> DeleteAsync(@foreachPK @dbType2net id);
+    }
+
+    public class @dbTable2netUpperRepository : I@dbTable2netUpperRepository
+    {
+        private readonly string _connectionString;
+
+        public @dbTable2netUpperRepository(IConfiguration configuration)
+        {
+            _connectionString = configuration.GetConnectionString("DefaultConnection");
+        }
+
+        private IDbConnection CreateConnection()
+        {
+            return new System.Data.SqlClient.SqlConnection(_connectionString);
+        }
+
+        public async Task<IEnumerable<@dbTable2netUpper>> GetAllAsync()
+        {
+            using (var connection = CreateConnection())
+            {
+                return await connection.QueryAsync<@dbTable2netUpper>("dbo.GetAll@dbTable2netUpper", commandType: CommandType.StoredProcedure);
+            }
+        }
+
+        public async Task<@dbTable2netUpper> GetByIdAsync(@foreachPK @dbType2net id)
+        {
+            using (var connection = CreateConnection())
+            {
+                var parameters = new DynamicParameters();
+                @foreachPK
+                parameters.Add("@p_@dbColmnName2net", id);
+                
+                return await connection.QueryFirstOrDefaultAsync<@dbTable2netUpper>(
+                    "dbo.GetById@dbTable2netUpper", 
+                    parameters, 
+                    commandType: CommandType.StoredProcedure);
+            }
+        }
+
+        public async Task<@dbTable2netUpper> CreateAsync(@dbTable2netUpper entity)
+        {
+            using (var connection = CreateConnection())
+            {
+                var parameters = new DynamicParameters();
+                @foreach
+                parameters.Add("@p_@dbColmnName2net", entity.@dbColmnName2netUpper);
+                
+                var newId = await connection.ExecuteScalarAsync<@foreachPK @dbType2net>(
+                    "dbo.InsertInto@dbTable2netUpper", 
+                    parameters, 
+                    commandType: CommandType.StoredProcedure);
+                
+                entity.@foreachPK @dbColmnName2netUpper = newId;
+                return entity;
+            }
+        }
+
+        public async Task<bool> UpdateAsync(@dbTable2netUpper entity)
+        {
+            using (var connection = CreateConnection())
+            {
+                var parameters = new DynamicParameters();
+                @foreachPK
+                parameters.Add("@p_@dbColmnName2net", entity.@dbColmnName2netUpper);
+                @foreach
+                parameters.Add("@p_@dbColmnName2net", entity.@dbColmnName2netUpper);
+                
+                var affectedRows = await connection.ExecuteAsync(
+                    "dbo.Update@dbTable2netUpper", 
+                    parameters, 
+                    commandType: CommandType.StoredProcedure);
+                
+                return affectedRows > 0;
+            }
+        }
+
+        public async Task<bool> DeleteAsync(@foreachPK @dbType2net id)
+        {
+            using (var connection = CreateConnection())
+            {
+                var parameters = new DynamicParameters();
+                @foreachPK
+                parameters.Add("@p_@dbColmnName2net", id);
+                
+                var affectedRows = await connection.ExecuteAsync(
+                    "dbo.Delete@dbTable2netUpper", 
+                    parameters, 
+                    commandType: CommandType.StoredProcedure);
+                
+                return affectedRows > 0;
+            }
+        }
+    }
+}

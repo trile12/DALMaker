@@ -1,0 +1,74 @@
+﻿-- Create procedure for @dbTable2netUpper
+DELIMITER //
+
+-- Insert procedure
+CREATE PROCEDURE InsertInto@dbTable2netUpper(
+    @foreach
+    IN p_@dbColmnName2net @dbType2mysql,
+)
+BEGIN
+    INSERT INTO @dbTableName (
+        @foreach
+        @dbColmnName,
+    )
+    VALUES (
+        @foreach
+        p_@dbColmnName2net,
+    );
+    SELECT LAST_INSERT_ID() AS NewId;
+END//
+
+-- Update procedure
+CREATE PROCEDURE Update@dbTable2netUpper(
+    @foreachPK
+    IN p_@dbColmnName2net @dbType2mysql,
+    @foreach
+    IN p_@dbColmnName2net @dbType2mysql,
+)
+BEGIN
+    UPDATE @dbTableName 
+    SET 
+        @foreach
+        @dbColmnName = p_@dbColmnName2net,
+    WHERE 
+        @foreachPK
+        @dbColmnName = p_@dbColmnName2net;
+END//
+
+-- Delete procedure
+CREATE PROCEDURE Delete@dbTable2netUpper(
+    @foreachPK
+    IN p_@dbColmnName2net @dbType2mysql,
+)
+BEGIN
+    DELETE FROM @dbTableName 
+    WHERE 
+        @foreachPK
+        @dbColmnName = p_@dbColmnName2net;
+END//
+
+-- Select by ID procedure
+CREATE PROCEDURE GetById@dbTable2netUpper(
+    @foreachPK
+    IN p_@dbColmnName2net @dbType2mysql,
+)
+BEGIN
+    SELECT 
+        @foreach
+        @dbColmnName,
+    FROM @dbTableName
+    WHERE 
+        @foreachPK
+        @dbColmnName = p_@dbColmnName2net;
+END//
+
+-- Select all procedure
+CREATE PROCEDURE GetAll@dbTable2netUpper()
+BEGIN
+    SELECT 
+        @foreach
+        @dbColmnName,
+    FROM @dbTableName;
+END//
+
+DELIMITER ;

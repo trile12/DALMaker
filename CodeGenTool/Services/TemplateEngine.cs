@@ -1,63 +1,21 @@
 ﻿using CodeGenTool.Models;
-using CodeGenTool.Services.Mapper;
+using CodeGenTool.Services.Template;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace CodeGenTool.Services
 {
 	public static class TemplateEngine
 	{
-		public static string Render(string template, TableInfo table)
+		public static (string result, string className) Render(string template, TableInfo table, string templateType)
 		{
-			string className = table.Name;
-			className = char.ToUpper(className[0]) + className[1..];
-
-			template = template.Replace("@dbTable2netUpper", className);
-
-			var result = new StringBuilder();
-			var lines = template.Split(Environment.NewLine);
-
-			bool insideLoop = false;
-			var loopTemplate = new List<string>();
-
-			foreach (var line in lines)
+			ITemplateProcessor processor = templateType switch
 			{
-				if (line.Contains("@foreach"))
-				{
-					insideLoop = true;
-					continue;
-				}
+				"csharp_dto.cs.template" => new CSharpDtoTemplateProcessor(table),
+				_ => throw new NotSupportedException($"Template type '{templateType}' is not supported.")
+			};
 
-				if (insideLoop)
-				{
-					if (line.Contains("dbType2net"))
-					{
-						insideLoop = false;
-
-						foreach (var col in table.Columns)
-						{
-							string colType = TypeMapper.MapToDotNetType(col.DataType);
-							string colName = char.ToUpper(col.Name[0]) + col.Name[1..];
-
-							result.AppendLine(line
-								.Replace("@dbType2net", colType)
-								.Replace("@dbColmnName2netUpper", colName));
-						}
-
-						loopTemplate.Clear();
-						continue;
-					}
-
-					loopTemplate.Add(line);
-				}
-				else
-				{
-					result.AppendLine(line);
-				}
-			}
-
-			return result.ToString();
+			string output = processor.ProcessTemplate(template);
+			return (output, processor.ClassName);
 		}
 	}
 }
