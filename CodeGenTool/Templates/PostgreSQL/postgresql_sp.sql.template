@@ -1,0 +1,21 @@
+﻿CREATE OR REPLACE FUNCTION get_all_{{dbTableName}}()
+RETURNS TABLE (
+    @foreach
+    {{db_column}} {{db_type2PosgreSQL}}{{@islast:,:}}
+    @end
+) AS $$
+BEGIN
+    RETURN QUERY SELECT * FROM {{dbTableName}};
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_{{dbTableName}}_by_id(input_id INT)
+RETURNS TABLE (
+    @foreach
+    {{db_column}} {{db_type2PosgreSQL}}{{@islast:,:}}
+    @end
+) AS $$
+BEGIN
+    RETURN QUERY SELECT * FROM {{dbTableName}} WHERE id = input_id;
+END;
+$$ LANGUAGE plpgsql;

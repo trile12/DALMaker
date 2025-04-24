@@ -17,10 +17,18 @@
 
   <ItemGroup>
     <None Remove="Templates\csharp_dto.cs.template" />
+    <None Remove="Templates\csharp_entity.cs.template" />
+    <None Remove="Templates\PostgreSQL\postgresql_sp.sql.template" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Templates\csharp_dto.cs.template">
+    <Content Include="Templates\C# Models\csharp_dto.cs.template">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\C# Models\csharp_entity.cs.template">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\PostgreSQL\postgresql_sp.sql.template">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -45,6 +53,10 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Templates\C# Web API\" />
   </ItemGroup>
 
 </Project>

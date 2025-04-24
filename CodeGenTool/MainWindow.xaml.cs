@@ -1,5 +1,8 @@
 ﻿using CodeGenTool.Models;
 using CodeGenTool.ViewModels;
+using System.IO;
+using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -29,17 +32,37 @@ namespace CodeGenTool
 		{
 			ViewModel.TemplateGroups.Clear();
 
-			var modelGroup = new TemplateGroup("C# Models/DTOs");
-			modelGroup.Templates.Add(new TemplateInfo { Name = "Entity Model", FileName = "csharp_model.template", IsSelected = false });
-			modelGroup.Templates.Add(new TemplateInfo { Name = "DTO", FileName = "csharp_dto.cs.template", IsSelected = true });
+			string templatesRootPath = Path.Combine(AppContext.BaseDirectory, "Templates");
+			if (!Directory.Exists(templatesRootPath)) return;
 
-			var webApiGroup = new TemplateGroup("C# Web API");
-			webApiGroup.Templates.Add(new TemplateInfo { Name = "Controller", FileName = "csharp_controller.template", IsSelected = false });
-			webApiGroup.Templates.Add(new TemplateInfo { Name = "Service", FileName = "csharp_service.template", IsSelected = false });
-			webApiGroup.Templates.Add(new TemplateInfo { Name = "Repository", FileName = "csharp_repository.template", IsSelected = false });
+			var groupDirs = Directory.GetDirectories(templatesRootPath);
 
-			ViewModel.TemplateGroups.Add(modelGroup);
-			ViewModel.TemplateGroups.Add(webApiGroup);
+			foreach (var groupDir in groupDirs)
+			{
+				string groupName = Path.GetFileName(groupDir);
+				var group = new TemplateGroup(groupName);
+
+				var templateFiles = Directory.GetFiles(groupDir, "*.template");
+				foreach (var file in templateFiles)
+				{
+					string fileName = Path.GetFileName(file); 
+					string displayName = fileName.Replace(".template", ""); 
+
+					group.Templates.Add(new TemplateInfo
+					{
+						Name = displayName,
+						FileName = Path.Combine(groupName, fileName), 
+						IsSelected = false
+					});
+				}
+
+				if (group.Templates.Count > 0)
+				{
+					group.Templates[0].IsSelected = true;
+				}
+
+				ViewModel.TemplateGroups.Add(group);
+			}
 		}
 
 		private void DatabaseComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -59,54 +82,44 @@ namespace CodeGenTool
 			var checkBox = sender as CheckBox;
 			var table = checkBox.DataContext as TableInfo;
 
+			if (isCheckFromColumn)
+			{
+				isCheckFromColumn = false;
+				return;
+			}
+
 			foreach (var column in table.Columns)
 			{
 				column.IsSelected = true;
 			}
 		}
 
-		private void Database_CheckBox_Unchecked(object sender, RoutedEventArgs e)
-		{
-			var checkBox = sender as CheckBox;
-			var table = checkBox.DataContext as TableInfo;
-
-			foreach (var column in table.Columns)
-			{
-				column.IsSelected = false;
-			}
-		}
-
-		private void Table_CheckBox_Checked(object sender, RoutedEventArgs e)
+		bool isCheckFromColumn = false;
+		private void Column_CheckBox_Checked(object sender, RoutedEventArgs e)
 		{
 			var checkBox = sender as CheckBox;
 			var column = checkBox.DataContext as ColumnInfo;
-
 			var table = column.ParentTable;
 
-			bool allColumnsSelected = true;
-			foreach (var col in table.Columns)
+			if (!table.IsSelected)
 			{
-				if (!col.IsSelected)
-				{
-					allColumnsSelected = false;
-					break;
-				}
-			}
-
-			if (allColumnsSelected)
-			{
+				isCheckFromColumn = true;
 				table.IsSelected = true;
 			}
 		}
 
-		private void Table_CheckBox_Unchecked(object sender, RoutedEventArgs e)
+		private void Column_CheckBox_Unchecked(object sender, RoutedEventArgs e)
 		{
 			var checkBox = sender as CheckBox;
 			var column = checkBox.DataContext as ColumnInfo;
-
 			var table = column.ParentTable;
-			table.IsSelected = false;
+
+			if (!table.Columns.Any(c => c.IsSelected))
+			{
+				table.IsSelected = false;
+			}
 		}
+
 
 		private void Database_Button_Click(object sender, RoutedEventArgs e)
 		{
@@ -126,20 +139,6 @@ namespace CodeGenTool
 			ColumnInfo column = (ColumnInfo)button.DataContext;
 
 			column.IsSelected = !column.IsSelected;
-
-			var table = column.ParentTable;
-
-			bool allColumnsSelected = true;
-			foreach (var col in table.Columns)
-			{
-				if (!col.IsSelected)
-				{
-					allColumnsSelected = false;
-					break;
-				}
-			}
-
-			table.IsSelected = allColumnsSelected;
 
 			e.Handled = true;
 		}

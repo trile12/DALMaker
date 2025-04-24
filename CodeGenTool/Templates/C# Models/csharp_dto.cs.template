@@ -1,0 +1,9 @@
+﻿namespace {{namespace}}
+{
+    public class {{dbTable2netUpper}}
+    {
+        @foreach
+        public {{db_type2net}} {{db_column2netUpper}} { get; set; }
+        @end
+    }
+}

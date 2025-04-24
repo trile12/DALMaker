@@ -177,7 +177,7 @@ namespace CodeGenTool.ViewModels
 					string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", template.FileName);
 					if (!File.Exists(templatePath))
 					{
-						StatusMessage = $"Template file not found: {template.FileName}";
+						StatusMessage = $"Template file not found: {template.Name}";
 						continue;
 					}
 
@@ -185,7 +185,14 @@ namespace CodeGenTool.ViewModels
 
 					foreach (var table in selectedTables)
 					{
-						var (rendered, className) = TemplateEngine.Render(templateContent, table, template.FileName);
+						var input = new TemplateInput
+						{
+							Namespace = !string.IsNullOrEmpty(Namespace)? Namespace :"{{namespace}}",
+							TemplateFileName = template.Name,
+							TableInfo = table
+						};
+
+						var (rendered, className) = TemplateEngine.Render(templateContent, input);
 						GeneratedCode += $"{rendered}\n";
 
 						string fileName = $"{className}.cs";
@@ -205,7 +212,7 @@ namespace CodeGenTool.ViewModels
 
 				StatusMessage = $"Generated {filesGenerated} files.";
 
-				System.Diagnostics.Process.Start("explorer.exe", OutputPath);
+				//System.Diagnostics.Process.Start("explorer.exe", OutputPath);
 			}
 			catch (Exception ex)
 			{
@@ -409,6 +416,18 @@ namespace CodeGenTool.ViewModels
 			{
 				_isDarkTheme = value;
 				OnPropertyChanged(nameof(IsDarkTheme));
+			}
+		}
+
+		private string _namespace = "DAL";
+
+		public string Namespace
+		{
+			get => _namespace;
+			set
+			{
+				_namespace = value;
+				OnPropertyChanged(nameof(_namespace));
 			}
 		}
 
