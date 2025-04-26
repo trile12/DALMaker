@@ -24,3 +24,26 @@ Template: Controller Generation
 Generate DTO template
 
 ![image](https://github.com/user-attachments/assets/771e66cc-cc7d-4ba1-a5c3-c28fc000e7e2)
+
+### 25/04/2025 – Fix bug treeview selection
+Refactor code
+
+//TODO: Create funtion for
+
+- BasicTokenResolver
+- LoopDirectiveHandler
+- ConditionalDirectiveHandler
+
+Implement for
+
+@foreach  ========== DONE
+
+@islast // ex: {{@islast:,:}} => , {{@islast:?:}} => ? ========== DONE
+
+@if / @endif
+
+@ifnot / @endif
+
+@upper, @lower, @pascal, @camel — format case
+
+@switch / @case / @default 
