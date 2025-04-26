@@ -245,18 +245,15 @@
                         <TreeView ItemsSource="{Binding TemplateGroups}">
                             <TreeView.ItemTemplate>
                                 <HierarchicalDataTemplate ItemsSource="{Binding Templates}">
-                                    <Expander Header="{Binding Name}" IsExpanded="{Binding IsExpanded}">
-                                        <ItemsControl Margin="32,8,0,0" ItemsSource="{Binding Templates}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <CheckBox
-                                                        Margin="0,4,0,4"
-                                                        Content="{Binding Name}"
-                                                        IsChecked="{Binding IsSelected}" />
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </Expander>
+                                    <TextBlock Text="{Binding Name}" />
+                                    <HierarchicalDataTemplate.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox
+                                                Margin="16,4,0,4"
+                                                Content="{Binding Name}"
+                                                IsChecked="{Binding IsSelected}" />
+                                        </DataTemplate>
+                                    </HierarchicalDataTemplate.ItemTemplate>
                                 </HierarchicalDataTemplate>
                             </TreeView.ItemTemplate>
                         </TreeView>
